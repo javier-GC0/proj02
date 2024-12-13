@@ -3,6 +3,7 @@ from tkinter import ttk
 import os
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import seaborn as sns
 import pandas as pd
 # config
 import sys
@@ -75,18 +76,27 @@ class Functions:
         x_axis = ttk.Combobox(axis_frame, state="readonly", values=columns)
         x_axis.grid(row=0, column=1, sticky="w")
 
-        tk.Label(axis_frame, text=f"{' '*46}Y-axis:", font=(FONT_TEXT, FONT_SIZE_MED_TEXT, "bold")).grid(row=0, column=2, sticky="e")
+        tk.Label(axis_frame, text=f"{' '*10}Y-axis:", font=(FONT_TEXT, FONT_SIZE_MED_TEXT, "bold")).grid(row=0, column=2, sticky="e")
         y_axis = ttk.Combobox(axis_frame, state="readonly", values=columns)
         y_axis.grid(row=0, column=3, sticky="w")
 
+        tk.Label(axis_frame, text=f"{' '*10}Category:", font=(FONT_TEXT, FONT_SIZE_MED_TEXT, "bold")).grid(row=0, column=4, sticky="e")
+        category = ttk.Combobox(axis_frame, state="readonly", values=columns)
+        category.grid(row=0, column=5, sticky="w")
+
+        tk.Label(axis_frame, text=f"{' '*10}Type of plot:", font=(FONT_TEXT, FONT_SIZE_MED_TEXT, "bold")).grid(row=0, column=6, sticky="e")
+        plot_type = ttk.Combobox(axis_frame, state="readonly", values=["Scatter", "Line", "Bar"])
+        plot_type.set("Scatter")
+        plot_type.grid(row=0, column=7, sticky="w")
+
         tk.Button(
             header, text="Plot",
-            command=lambda: Functions.plot_data(header, df, x_axis.get(), y_axis.get()),
+            command=lambda: Functions.plot_data(header, df, x_axis.get(), y_axis.get(), category.get(), plot_type.get()),
             font=(FONT_BUTTON, FONT_SIZE_BUTTON), width=WIDTH_BUTTON, bg=BG_BUTTON
         ).grid(row=0, column=3, padx=5, pady=10)
 
     @staticmethod
-    def plot_data(header, df, x_axis, y_axis):
+    def plot_data(header, df, x_axis, y_axis, category, plot_type):
         if not x_axis or not y_axis:
             tk.messagebox.showwarning("Warning", "Please select both X and Y axes")
             return
@@ -94,6 +104,7 @@ class Functions:
         try:
             x_data = df[x_axis]
             y_data = df[y_axis]
+            category_data = df[category] if category else None
 
             data_frame = Functions.raw_data.data_frame 
             tk.Label(data_frame, text="Plot:", font=(FONT_TEXT, FONT_SIZE_MED_TEXT, "bold")).grid(
@@ -101,10 +112,29 @@ class Functions:
 
             fig = Figure(figsize=(5, 4), dpi=100)
             ax = fig.add_subplot(111)
-            ax.plot(x_data, y_data, "o", label=f"{y_axis} vs. {x_axis}")
+
+            if plot_type == "Scatter":
+                if category_data is not None:  
+                    sns.scatterplot(x=x_data, y=y_data, hue=category_data, ax=ax)
+                else: 
+                    sns.scatterplot(x=x_data, y=y_data, ax=ax)
+            elif plot_type == "Line":
+                if category_data is not None:  
+                    sns.lineplot(x=x_data, y=y_data, hue=category_data, ax=ax)
+                else:  
+                    sns.lineplot(x=x_data, y=y_data, ax=ax)
+            elif plot_type == "Bar":
+                if category_data is not None:  
+                    sns.barplot(x=x_data, y=y_data, hue=category_data, ax=ax)
+                else:  
+                    sns.barplot(x=x_data, y=y_data, ax=ax)
+  
             ax.set_xlabel(x_axis)
             ax.set_ylabel(y_axis)
-            ax.legend()
+            ax.set_title(f"{y_axis} vs. {x_axis}")
+
+            if category_data is not None:
+                ax.legend()
 
             canvas = FigureCanvasTkAgg(fig, master=data_frame)
             canvas.draw()
